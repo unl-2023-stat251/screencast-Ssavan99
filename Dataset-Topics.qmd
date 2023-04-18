@@ -1,23 +1,49 @@
 ---
-author: "Your Name"
+author: "Savan Patel"
 date: "2023-04-18"
 title: "Project Dataset and Topics"
 output: html
 categories: project
 ---
+[Link to dataset](https://github.com/veronicanigro/Formula_1/tree/master/data%20collection)
+Contains all the datasets: Races, Results, Driver standings, constructor standings, qualifying, weather
 
-[Link to dataset]()
+"I would prefer to do this. Please let me know if this data works."
 
 Things you plan to investigate using this dataset:
 
-- Thing 1
-- Thing 2
-- Thing 3
+- Convert date of birth and race date to datetime and calculate driver age at each race
+- Map data to reduce categorie in status of driver in "Results.csv"
+- Combine all the files to create a final dataset for analysis
+- Transform some features of the data (one hot encoding for future research)
+- Visualize correlation of starting position and finishing position. Basic EDA
+- Data Cleaning
 
 Stat 251 topics you plan to cover during the analysis:
 
-1. Topic 1
-2. Topic 2
-3. Topic 3
-4. Topic 4
+1. Data Cleaning
+2. Data reshaping
+3. Joining data
+4. Exploratory Data Analysis/ Data Visualization
+5. Dates and times
+6. writing functions
+
+
+
+[Link to dataset](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-04-04)
+
+Things you plan to investigate using this dataset:
+
+- Relation of number of cards given and the refree of the match
+- Get the conversion rate of teams during the season
+- Analyses of team's performance in first half of the season compared to second half
+- EDA of teams and relation to goals score home and away
+- EDA of teams and number of cards they receive over the season
+
+Stat 251 topics you plan to cover during the analysis:
+
+1. Data Visualization
+2. Data Cleaning if required
+3. Matrix calculations
+4. Dates and Times
 
