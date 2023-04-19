@@ -5,6 +5,7 @@ title: "Project Dataset and Topics"
 output: html
 categories: project
 ---
+
 [Link to dataset](https://github.com/veronicanigro/Formula_1/tree/master/data%20collection)
 Contains all the datasets: Races, Results, Driver standings, constructor standings, qualifying, weather
 
@@ -29,6 +30,7 @@ Stat 251 topics you plan to cover during the analysis:
 6. writing functions
 
 
+(2023-04-19 - This looks awesome, please go ahead!! - Dr. V)
 
 [Link to dataset](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-04-04)
 
