@@ -6,3 +6,168 @@ output: html
 categories: project
 ---
 
+```{python}
+# command to install sklearn
+# pip install scikit-learn
+import pandas as pd
+import matplotlib.pyplot as plt
+from dateutil.relativedelta import *
+from sklearn.preprocessing import OneHotEncoder
+```
+
+```{python}
+races = pd.read_csv("https://raw.githubusercontent.com/veronicanigro/Formula_1/master/data%20collection/races.csv")
+results = pd.read_csv("https://raw.githubusercontent.com/veronicanigro/Formula_1/master/data%20collection/results.csv")
+driver_standings = pd.read_csv("https://raw.githubusercontent.com/veronicanigro/Formula_1/master/data%20collection/driver_standings.csv")
+constructor_standings = pd.read_csv("https://raw.githubusercontent.com/veronicanigro/Formula_1/master/data%20collection/constructor_standings.csv")
+weather = pd.read_csv("https://raw.githubusercontent.com/veronicanigro/Formula_1/master/data%20collection/weather.csv")
+```
+
+
+# 1: Data Cleaning
+Cropping data and removing unnecessary columns.
+```{python}
+# Cropping data from 1950-2022 to 2014-2019
+races = races[(races['season'] >= 2014)]
+races = races.reset_index(drop=True)
+
+results = results[(results['season'] >= 2014)]
+results = results.reset_index(drop=True)
+
+constructor_standings = constructor_standings[(constructor_standings['season'] >= 2014)]
+constructor_standings = constructor_standings.reset_index(drop=True)
+
+driver_standings = driver_standings[(driver_standings['season'] >= 2014)]
+driver_standings = driver_standings.reset_index(drop=True)
+
+weather = weather[(weather['season'] >= 2014)]
+weather = weather.reset_index(drop=True)
+
+# removing unnecessary columns from the dataframes
+races = races.drop(['url', 'lat', 'long', 'country'], axis=1)
+results = results.drop('time', axis=1)
+weather = weather.drop('weather', axis=1)
+
+# checking if there are any null values
+
+# results.isnull().sum()
+nullRows = results[results.isnull().any(axis=1)]
+# print(nullRows)
+
+# manually inserting the missing data
+results.loc[3047, 'points'] = 12.5
+results.loc[3049, 'points'] = 7.5
+results.loc[3056, 'points'] = 0.5
+```
+
+
+# Map data to reduce categorie in status of driver in "Results.csv"
+Mapping column values and changing the values respectively.
+```{python}
+statusDict = {'Finished': ['Finished', '+1 Lap', '+2 Laps', '+8 Laps', '+3 Laps', '+4 Laps', '+6 Laps', '+5 Laps'],
+              'Mechanical Issue': ['ERS', 'Oil pressure', 'Engine', 'Technical', 'Gearbox', 'Electrical', 'Power Unit', 
+                                   'Brakes', 'Clutch', 'Retired', 'Exhaust', 'Mechanical', 'Turbo', 'Rear wing', 'Drivetrain', 
+                                   'Suspension', 'Oil leak', 'Water leak', 'Water pressure', 'Electronics', 'Wheel', 'Power loss',
+                                   'Fuel system', 'Transmission', 'Front wing', 'Tyre', 'Throttle', 'Brake duct', 'Hydraulics',
+                                   'Battery', 'Puncture', 'Overheating', 'Wheel nut', 'Vibrations', 'Driveshaft', 'Fuel pressure',
+                                   'Seat', 'Spark plugs', 'Steering', 'Damage', 'Out of fuel', 'Debris', 'Radiator', 
+                                   'Cooling system', 'Water pump', 'Fuel leak', 'Fuel pump', 'Undertray', 'Differential'],
+              'Incident': ['Collision', 'Disqualified','Withdrew', 'Accident', 'Collision damage', 'Spun off', 'Excluded'],
+              'Illness': ['Illness']
+    }
+
+for key, value in statusDict.items():
+        results['status'] = results['status'].replace(value, key)
+```
+
+# Merging data sets
+Joining different data frames.
+```{python}
+finalDf = pd.merge(races, results, how = 'inner', on=['season', 'round', 'circuit_id'])
+finalDf = pd.merge(finalDf, weather, how = 'inner', on=['season', 'round', 'circuit_id'])
+finalDf = pd.merge(finalDf, driver_standings, how = 'left', on=['season', 'round', 'driver'])
+finalDf = pd.merge(finalDf, constructor_standings, how = 'left', on=['season', 'round', 'constructor'])
+
+finalDf.head()
+```
+
+# Converting date of birth and race date to datetime and calculate driver age at each race
+Using datetime library to calculate age of the driver at each race
+```{python}
+finalDf['date'] = pd.to_datetime(finalDf.date)
+finalDf['date_of_birth'] = pd.to_datetime(finalDf.date_of_birth)
+
+finalDf['driver_age'] = finalDf.apply(lambda x: 
+                                        relativedelta(x['date'], x['date_of_birth']).years, axis=1)
+
+# finalDf.drop(['date_of_birth'], axis = 1, inplace = True)
+# finalDf.drop(['date'], axis = 1, inplace = True)
+
+print(finalDf[['date_of_birth', 'date', 'driver_age']])
+```
+
+# Transform some features of the data (one hot encoding)
+I have not particularly used 'pivot' as the transformation were a bit different. I am assigning binary values to the transformed categories in the "circuit_id, constructor, status" columns.
+```{python}
+ohe = OneHotEncoder(sparse=False)
+
+df_ohe = finalDf
+
+ohe.fit(df_ohe[['circuit_id', 'constructor', 'status']])
+
+temp_df = pd.DataFrame(data=ohe.transform(df_ohe[['circuit_id', 'constructor', 'status']]), columns=ohe.get_feature_names_out())
+df_ohe.drop(columns=['circuit_id', 'constructor', 'status'], axis=1, inplace=True)
+df_ohe = pd.concat([df_ohe.reset_index(drop=True), temp_df], axis=1)
+
+df_ohe.head()
+```
+
+# Visualize correlation of starting position & finishing position. 
+Calculating correlation of starting position and finishing position at each circuit and displaying it in a bar graph.
+```{python}
+correlation1 = results.groupby('circuit_id')[['grid','podium']].corr()['podium']
+correlation1
+correlation1 = correlation1.loc[(correlation1 != 1)]
+print(correlation1)
+
+circuit_t2 = []
+corr_values = []
+for circuit,grid in correlation1.index:
+  circuit_t2.append(circuit)
+  corr_values.append(correlation1.loc[circuit,grid])
+
+fig, ax = plt.subplots(figsize=(16, 9))
+ax.bar(circuit_t2, corr_values, width=0.8, color='lightblue')
+ax.set_xticklabels(circuit_t2, rotation='vertical', fontsize=12)
+ax.set_xlabel('Circuit', fontsize=14)
+ax.set_ylabel('Correlation values (2014 - 2022)', fontsize=14)
+ax.set_title('Figure1: Correlation values of starting position and finishing position per circuit', fontsize=16)
+
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
+plt.show()
+```
+
+# Visualize percentage of mechanical issues per constructor
+Calculating the percentage rate of total mechanical issues faced by each constructor and displaying it in horizontal bar plot.
+```{python}
+races_per_constructor = results.groupby('constructor')['status'].count()
+races_per_constructor.sort_index(inplace=True)
+
+failure_filt = results['status'].isin(['Mechanical Issue']) 
+failure_filtered = results.loc[failure_filt] 
+failures_per_contructor = failure_filtered.groupby('constructor')['status'].count() 
+
+
+df = pd.DataFrame({'unsuccessful': failures_per_contructor,'total races':races_per_constructor}) 
+df['percentage failure'] = (df['unsuccessful'] / df['total races'])*100  
+print(df)
+
+fig, ax = plt.subplots(figsize=(15,10))
+ax.barh(df.index,df['percentage failure'], color='green')
+ax.set_xlabel('Percentage')
+ax.set_ylabel('Constructor')
+ax.set_title('Percentage of mechanical issues per constructor', fontsize=16)
+plt.show()
+```
