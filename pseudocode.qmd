@@ -23,11 +23,10 @@ constructor_standings = pd.read_csv("https://raw.githubusercontent.com/veronican
 weather = pd.read_csv("https://raw.githubusercontent.com/veronicanigro/Formula_1/master/data%20collection/weather.csv")
 ```
 
-
 # 1: Data Cleaning
 Cropping data and removing unnecessary columns.
 ```{python}
-# Cropping data from 1950-2022 to 2014-2019
+# Cropping data from 1950-2019 to 2014-2019
 races = races[(races['season'] >= 2014)]
 races = races.reset_index(drop=True)
 
@@ -42,22 +41,14 @@ driver_standings = driver_standings.reset_index(drop=True)
 
 weather = weather[(weather['season'] >= 2014)]
 weather = weather.reset_index(drop=True)
+```
 
+
+```{python}
 # removing unnecessary columns from the dataframes
 races = races.drop(['url', 'lat', 'long', 'country'], axis=1)
 results = results.drop('time', axis=1)
 weather = weather.drop('weather', axis=1)
-
-# checking if there are any null values
-
-# results.isnull().sum()
-nullRows = results[results.isnull().any(axis=1)]
-# print(nullRows)
-
-# manually inserting the missing data
-results.loc[3047, 'points'] = 12.5
-results.loc[3049, 'points'] = 7.5
-results.loc[3056, 'points'] = 0.5
 ```
 
 
@@ -80,6 +71,10 @@ for key, value in statusDict.items():
         results['status'] = results['status'].replace(value, key)
 ```
 
+```{python}
+results.status.unique()
+```
+
 # Merging data sets
 Joining different data frames.
 ```{python}
@@ -88,7 +83,7 @@ finalDf = pd.merge(finalDf, weather, how = 'inner', on=['season', 'round', 'circ
 finalDf = pd.merge(finalDf, driver_standings, how = 'left', on=['season', 'round', 'driver'])
 finalDf = pd.merge(finalDf, constructor_standings, how = 'left', on=['season', 'round', 'constructor'])
 
-finalDf.head()
+finalDf.head(30)
 ```
 
 # Converting date of birth and race date to datetime and calculate driver age at each race
@@ -100,11 +95,15 @@ finalDf['date_of_birth'] = pd.to_datetime(finalDf.date_of_birth)
 finalDf['driver_age'] = finalDf.apply(lambda x: 
                                         relativedelta(x['date'], x['date_of_birth']).years, axis=1)
 
-# finalDf.drop(['date_of_birth'], axis = 1, inplace = True)
-# finalDf.drop(['date'], axis = 1, inplace = True)
-
 print(finalDf[['date_of_birth', 'date', 'driver_age']])
 ```
+
+```{python}
+finalDf.drop(['date_of_birth'], axis = 1, inplace = True)
+finalDf.drop(['date'], axis = 1, inplace = True)
+finalDf.head()
+```
+
 
 # Transform some features of the data (one hot encoding)
 I have not particularly used 'pivot' as the transformation were a bit different. I am assigning binary values to the transformed categories in the "circuit_id, constructor, status" columns.
@@ -122,12 +121,13 @@ df_ohe = pd.concat([df_ohe.reset_index(drop=True), temp_df], axis=1)
 df_ohe.head()
 ```
 
+
 # Visualize correlation of starting position & finishing position. 
 Calculating correlation of starting position and finishing position at each circuit and displaying it in a bar graph.
 ```{python}
-correlation1 = results.groupby('circuit_id')[['grid','podium']].corr()['podium']
-correlation1
-correlation1 = correlation1.loc[(correlation1 != 1)]
+correlation = results.groupby('circuit_id')[['grid','podium']].corr()['podium']
+correlation
+correlation1 = correlation.loc[(correlation != 1)]
 print(correlation1)
 
 circuit_t2 = []
